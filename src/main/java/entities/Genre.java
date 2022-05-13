@@ -1,4 +1,4 @@
-package pojo;
+package entities;
 
 import com.google.gson.Gson;
 

@@ -1,31 +1,15 @@
 import io.restassured.response.Response;
-import org.apache.log4j.Logger;
-import org.testng.Assert;
-import org.testng.annotations.*;
-import pojo.Genre;
-import services.GenreResponseReader;
-import services.GenreService;
-import services.Verifier;
-
-import java.util.List;
+import org.testng.annotations.Test;
+import entities.Genre;
+import webservices.GenreService;
+import webservices.Verifier;
 
 public class GenreTests {
     GenreService genreService = new GenreService();
-    GenreResponseReader genreResponseReader = new GenreResponseReader();
     Verifier verifier = new Verifier();
-    int max = getMaxGenreID();
+    int max = genreService.getMaxGenreID();
     Genre testGenre = genreService.generateGenre(max);
-    private static final Logger LOG = Logger.getLogger(String.valueOf(GenreTests.class));
 
-    public int getMaxGenreID(){
-        Response response = genreService.getAllGenres();
-        List<Genre> genreList = genreResponseReader.getGenresListFromResponse(response);
-        List<Integer> genreIDList = genreResponseReader.getGenreIDListFromResponse(genreList);
-        int max = genreIDList.stream().max(Integer::compare).get();
-        max++;
-        LOG.info(String.format("MaxIDGende is '%d'", max));
-        return max;
-    }
 
 //    @Test (enabled = true)
 //    public void showAllGenres(){
@@ -33,76 +17,57 @@ public class GenreTests {
 //        response.then().log().all();
 //    }
 
-//    @BeforeClass (enabled = true)
-//    public void deleteGenreTest(){
-//        Response response = genreService.deleteGenreByGenreID(max);
-//    }
-
     @Test
-    public void verifyCreatedGenre(){
+    public void verifyCreatedGenre() {
         Response responseCreate = genreService.createGenre(testGenre);
-        verifier.verifyStatusCodeForPost(responseCreate);
-        verifier.verifyGenresAreTheSame(genreResponseReader.getGenreFromResponse(responseCreate), testGenre);
+        verifier
+                .verifyStatusCodeForPost(responseCreate)
+                .verifyGenresNamesAreTheSame(testGenre, responseCreate)
+                .verifyGenresAreTheSame(genreService.getGenreFromResponse(responseCreate), testGenre);
         Response responseDelete = genreService.deleteGenreByGenreID(testGenre.genreId);
         verifier.verifyStatusCodeForDelete(responseDelete);
     }
 
     @Test
-    public void verifyGotGenre(){
+    public void verifyGotGenre() {
         Response responseCreate = genreService.createGenre(testGenre);
         verifier.verifyStatusCodeForPost(responseCreate);
         Response responseGet = genreService.getGenreByGenreID(testGenre.genreId);
-        verifier.verifyStatusCodeForGetOrPut(responseGet);
-        verifier.verifyGenresAreTheSame(genreResponseReader.getGenreFromResponse(responseGet), testGenre);
+        verifier
+                .verifyStatusCodeForGetOrPut(responseGet)
+                .verifyGenresNamesAreTheSame(testGenre, responseCreate)
+                .verifyGenresAreTheSame(genreService.getGenreFromResponse(responseGet), testGenre);
         Response responseDelete = genreService.deleteGenreByGenreID(testGenre.genreId);
         verifier.verifyStatusCodeForDelete(responseDelete);
     }
 
     @Test
-    public void verifyUpdatedGenre(){
+    public void verifyUpdatedGenre() {
         Response responseCreate = genreService.createGenre(testGenre);
         verifier.verifyStatusCodeForPost(responseCreate);
         Response responseUpdate = genreService.updateGenreByGenreID(new Genre(max, "updatedName", "updatedDescription"));
-        verifier.verifyStatusCodeForGetOrPut(responseUpdate);
-        verifier.verifyGenresAreNotTheSame(genreResponseReader.getGenreFromResponse(responseUpdate), testGenre);
+        verifier
+                .verifyStatusCodeForGetOrPut(responseUpdate)
+                .verifyGenresAreNotTheSame(genreService.getGenreFromResponse(responseUpdate), testGenre);
         Response responseDelete = genreService.deleteGenreByGenreID(testGenre.genreId);
         verifier.verifyStatusCodeForDelete(responseDelete);
     }
 
-
     @Test
-    public void verifyDeletedGenre(){
+    public void verifyDeletedGenre() {
         Response responseCreate = genreService.createGenre(testGenre);
         verifier.verifyStatusCodeForPost(responseCreate);
         Response responseDelete = genreService.deleteGenreByGenreID(testGenre.genreId);
-        verifier.verifyStatusCodeForDelete(responseDelete);
-        verifier.verifyDeleteResponseIsEmpty(responseDelete);
+        verifier
+                .verifyStatusCodeForDelete(responseDelete)
+                .verifyDeleteResponseIsEmpty(responseDelete);
     }
 
     @Test(description = "negative test")
-    public void verifyGenreWithInvalidID(){
-        Response response2 = genreService.getGenreByGenreID(max+1);
-        verifier.verifyStatusCode404(response2);
-        verifier.verifyError(response2);
+    public void verifyGenreWithInvalidID() {
+        Response response2 = genreService.getGenreByGenreID(max + 1);
+        verifier
+                .verifyStatusCode404(response2)
+                .verifyError(response2);
     }
-
-    @Test
-    public void verifysmth (){
-        Response responseCreate = genreService.createGenre(testGenre);
-        verifier.verifyStatusCodeForPost(responseCreate);
-        Response responseGet = genreService.getGenreByGenreID(testGenre.genreId);
-        verifier.verifyStatusCodeForGetOrPut(responseGet);
-        String nameFromResponse = genreResponseReader.getGenreNameFromResponse(responseGet);
-        Assert.assertEquals(testGenre.genreName, nameFromResponse, "names are not equals");
-    }
-
-    @Test
-    public void getAllGenreID(){
-        Response response = genreService.getAllGenres();
-        List<Genre> genreList = genreResponseReader.getGenresListFromResponse(response);
-        List<Integer> genreID = genreResponseReader.getGenreIDListFromResponse(genreList);
-        genreID.forEach(System.out::println);
-
-    }
-
 }
